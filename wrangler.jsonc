@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "cliotp-worker",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-16",
+
+  "durable_objects": {
+    "bindings": [
+      { "name": "STORE", "class_name": "TotpStore" }
+    ]
+  },
+
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["TotpStore"] }
+  ]
+}
