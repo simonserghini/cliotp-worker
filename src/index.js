@@ -138,16 +138,10 @@ export default {
       if (!google.allowed.includes(email)) return json({ error: 'email not allowed' }, 403);
       const session = await signSession({ email, exp: Math.floor(Date.now() / 1000) + SESSION_AGE }, google.sessionSecret);
       const secure = url.protocol === 'https:' ? '; Secure' : '';
-      return new Response(null, {
-        status: 302,
-        headers: {
-          Location: '/',
-          'Set-Cookie': [
-            `cliotp_session=${session}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_AGE}${secure}`,
-            'cliotp_oauth_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0',
-          ],
-        },
-      });
+      const headers = new Headers({ Location: '/' });
+      headers.append('Set-Cookie', `cliotp_session=${session}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_AGE}${secure}`);
+      headers.append('Set-Cookie', 'cliotp_oauth_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+      return new Response(null, { status: 302, headers });
     }
 
     if (p.startsWith('/api/')) {
