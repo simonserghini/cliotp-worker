@@ -4,6 +4,10 @@
   "main": "src/index.js",
   "compatibility_date": "2026-08-16",
 
+  "routes": [
+    { "pattern": "otp.serghini.me", "custom_domain": true }
+  ],
+
   "durable_objects": {
     "bindings": [
       { "name": "STORE", "class_name": "TotpStore" }
