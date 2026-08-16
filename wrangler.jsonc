@@ -8,6 +8,11 @@
     { "pattern": "otp.serghini.me", "custom_domain": true }
   ],
 
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+
   "durable_objects": {
     "bindings": [
       { "name": "STORE", "class_name": "TotpStore" }

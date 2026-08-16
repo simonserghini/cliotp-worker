@@ -8,7 +8,8 @@ same REST API, same `cliotpc` CLI. Instead of a VPS, the secrets live in a
 **Durable Object** on Cloudflare's edge.
 
 Runs on Workers + Durable Objects (SQLite-backed). Zero runtime dependencies
-(WebCrypto only). The existing `cliotpc` terminal client talks to it unchanged.
+(WebCrypto only). The existing `cliotpc` terminal client talks to it unchanged,
+and the same web UI is served at `/`.
 
 ```
 $ export CLIOTP_SERVER=https://cliotp.yourname.workers.dev
@@ -107,8 +108,6 @@ only). Duplicate labels are rejected with `409`.
 - **Rate limiting / IP allowlist** — delegated to Cloudflare (WAF rules / rate
   limiting rules in the dashboard), since edge protections sit in front of the
   Worker.
-- **Web UI** — this deployment target is API/CLI-first; the full browser UI
-  ships with `cliotp-server`.
 - **`/metrics`** — Cloudflare provides analytics in the dashboard.
 
 ---

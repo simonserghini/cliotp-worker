@@ -24,16 +24,8 @@ export default {
       return json({ ok: true, version: VERSION });
     }
 
-    if (p === '/') {
-      return new Response(
-        `cliotp-worker ${VERSION}\n\n` +
-        'TOTP/HOTP/Steam over a REST API. Use the cliotpc client:\n\n' +
-        '  export CLIOTP_SERVER=https://your-worker.example.com\n' +
-        '  export CLIOTP_TOKEN=<your API key>\n' +
-        '  cliotpc list\n',
-        { headers: { 'Content-Type': 'text/plain; charset=utf-8' } },
-      );
-    }
+    // `/`, `/app.js`, `/style.css` are served from the `assets` directory
+    // (public/) automatically; the Worker only handles non-asset paths.
 
     if (p.startsWith('/api/')) {
       if (!env.STORE) return json({ error: 'STORE Durable Object binding is missing' }, 500);
