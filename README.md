@@ -2,8 +2,8 @@
 
 **TOTP / HOTP / Steam Guard codes, served from a Cloudflare Worker.**
 
-The serverless sibling of [`cliotp`](https://github.com/yourname/cliotp) and
-[`cliotp-server`](https://github.com/yourname/cliotp-server) — same crypto,
+The serverless sibling of the `cliotp` bash script and
+[`cliotp-server`](https://github.com/simonserghini/cliotp-server) — same crypto,
 same REST API, same `cliotpc` CLI. Instead of a VPS, the secrets live in a
 **Durable Object** on Cloudflare's edge.
 
@@ -20,6 +20,12 @@ $ cliotpc code github
 ---
 
 ## Deploy
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/simonserghini/cliotp-worker)
+
+> One-click deploy clones this repo to your account and builds it. Set the
+> `API_TOKEN` and `SECRET` secrets right after — until then the Worker returns
+> a 500.
 
 ```sh
 npm install            # pulls in wrangler (dev dependency)
