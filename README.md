@@ -41,6 +41,25 @@ npx wrangler deploy
   before it's written to storage. **Do not change it after adding entries**,
   or the stored secrets become undecryptable.
 
+### Google sign-in (optional)
+
+To use **Sign in with Google** instead of an API key:
+
+1. Create an OAuth 2.0 **Web application** client at
+   https://console.cloud.google.com/apis/credentials
+2. Add the redirect URI `https://otp.serghini.me/auth/google/callback`
+3. Set `GOOGLE_CLIENT_ID` and `GOOGLE_ALLOWED_EMAILS` in `wrangler.jsonc`
+   `vars` (or the dashboard), then:
+   ```sh
+   npx wrangler secret put GOOGLE_CLIENT_SECRET
+   npx wrangler secret put SESSION_SECRET
+   npx wrangler deploy
+   ```
+
+A Google sign-in sets a signed 30-day session cookie with admin access. API
+keys keep working for `cliotpc`. Without Google config, the UI shows the
+API-key form.
+
 Local dev: `npm run dev` (bindings are simulated locally by default).
 
 ---

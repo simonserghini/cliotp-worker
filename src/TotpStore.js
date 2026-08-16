@@ -165,15 +165,16 @@ export class TotpStore {
     try {
       await this.ensureKeys();
 
+      const sessionEmail = request.headers.get('X-Auth-Email') || '';
       const auth = request.headers.get('Authorization') || '';
       const bearer = auth.startsWith('Bearer ') ? auth.slice(7) : '';
       const provided = bearer || request.headers.get('X-Api-Token') || '';
-      const cred = await this.authenticate(provided);
+      const cred = sessionEmail ? { ok: true, key: null } : await this.authenticate(provided);
       if (!cred.ok) {
         return json({ error: 'unauthorized' }, 401, { 'WWW-Authenticate': 'Bearer' });
       }
       if (cred.key) await this.touchLastUsed(cred.key);
-      const isAdmin = !cred.key || cred.key.scope !== 'readonly';
+      const isAdmin = sessionEmail ? true : (!cred.key || cred.key.scope !== 'readonly');
 
       if (request.method === 'GET' && p === '/api/entries') {
         return json((await this.loadEntries()).map(publicEntry));

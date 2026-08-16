@@ -4,6 +4,11 @@
   "main": "src/index.js",
   "compatibility_date": "2026-08-16",
 
+  "vars": {
+    "GOOGLE_CLIENT_ID": "",
+    "GOOGLE_ALLOWED_EMAILS": ""
+  },
+
   "routes": [
     { "pattern": "otp.serghini.me", "custom_domain": true }
   ],

@@ -24,9 +24,10 @@ function makeStore() {
   return { store: new TotpStore(ctx, env), ctx };
 }
 
-async function req(store, method, path, { token = 'root-token', body } = {}) {
+async function req(store, method, path, { token = 'root-token', body, email } = {}) {
   const headers = {};
   if (token) headers.Authorization = 'Bearer ' + token;
+  if (email) headers['X-Auth-Email'] = email;
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   const res = await store.fetch(new Request('http://x' + path, {
     method, headers, body: body === undefined ? undefined : JSON.stringify(body),
@@ -119,6 +120,18 @@ test('scopes, lastUsedAt, and duplicate detection', async () => {
   const remaining = (await req(store, 'GET', '/api/keys')).body;
   assert.equal(remaining.length, 1);
   assert.equal((await req(store, 'DELETE', `/api/keys/${remaining[0].id}`)).status, 400);
+});
+
+test('session (X-Auth-Email) grants admin access', async () => {
+  const { store } = makeStore();
+  // no API key, but a session email header from the worker → admin
+  const keys = await req(store, 'GET', '/api/keys', { token: null, email: 'me@example.com' });
+  assert.equal(keys.status, 200);
+  const created = await req(store, 'POST', '/api/keys', { token: null, email: 'me@example.com', body: { name: 'from-session' } });
+  assert.equal(created.status, 201);
+  // without the header and without a key → still 401
+  const noAuth = await req(store, 'GET', '/api/keys', { token: null });
+  assert.equal(noAuth.status, 401);
 });
 
 test('otpauth URI and migration import', async () => {
