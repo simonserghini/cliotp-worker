@@ -5,8 +5,9 @@
   "compatibility_date": "2026-08-16",
 
   "vars": {
-    "GOOGLE_CLIENT_ID": "",
-    "GOOGLE_ALLOWED_EMAILS": ""
+    "GOOGLE_CLIENT_ID": "635496044372-0770k5p6a7o7l7k0bj5tvpkjvji63gb7.apps.googleusercontent.com",
+    "GOOGLE_ALLOWED_EMAILS": "simonserghini@gmail.com",
+    "GOOGLE_REDIRECT_URI": "https://otp.serghini.me/auth/google/callback"
   },
 
   "routes": [
