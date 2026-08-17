@@ -5,7 +5,9 @@ const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
 let key = localStorage.getItem(LS_KEY) || '';
-let codesTimer = null;
+let codesTicker = null;
+let codesSnapshot = null; // { at: epoch ms, codes } for client-side countdown interpolation
+let codesInFlight = false;
 let googleEnabled = false;
 
 // ---------------------------------------------------------------------------
@@ -43,7 +45,8 @@ function toast(msg) {
 function showLoginView(mode) {
   $('#login').hidden = false;
   $('#app').hidden = true;
-  if (codesTimer) { clearInterval(codesTimer); codesTimer = null; }
+  stopPolling();
+  codesSnapshot = null;
   $('#google-login').hidden = mode !== 'google';
   $('#login-form').hidden = mode !== 'key';
   $('#use-google-login').hidden = !(mode === 'key' && googleEnabled);
@@ -54,8 +57,30 @@ function showApp() {
   $('#app').hidden = false;
   switchTab('codes');
   refreshAll();
-  if (!codesTimer) codesTimer = setInterval(loadCodes, 1000);
+  startPolling();
 }
+
+// Fetch codes only when a countdown crosses 0 — once per TOTP window — instead
+// of on a fixed timer. A local 1s ticker interpolates the countdown and progress
+// bar between fetches, so the UI stays live at ~1 request per 30s.
+function startPolling() {
+  stopPolling();
+  codesTicker = setInterval(tickCountdowns, 1000);
+}
+
+function stopPolling() {
+  if (codesTicker) { clearInterval(codesTicker); codesTicker = null; }
+}
+
+// Pause polling entirely while the tab is hidden; refresh immediately on return.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    stopPolling();
+  } else if (key && !$('#app').hidden) {
+    loadCodes();
+    startPolling();
+  }
+});
 
 function login() {
   key = $('#key-input').value.trim();
@@ -81,6 +106,7 @@ function switchTab(name) {
   $('#tab-codes').hidden = name !== 'codes';
   $('#tab-entries').hidden = name !== 'entries';
   $('#tab-keys').hidden = name !== 'keys';
+  if (name === 'codes') loadCodes();
   if (name === 'entries') loadEntries();
   if (name === 'keys') loadKeys();
 }
@@ -90,10 +116,14 @@ function switchTab(name) {
 // ---------------------------------------------------------------------------
 
 async function loadCodes() {
-  if (!key) return;
+  if (!key || codesInFlight) return;
+  codesInFlight = true;
   let codes;
   try { codes = await api('GET', '/api/codes'); }
   catch (e) { toast(e.message); return; }
+  finally { codesInFlight = false; }
+
+  codesSnapshot = { at: Date.now(), codes };
 
   const grid = $('#codes-grid');
   grid.innerHTML = '';
@@ -105,6 +135,8 @@ async function loadCodes() {
 
     const label = (c.issuer ? c.issuer + ': ' : '') + c.name;
     const isHotp = c.kind === 'hotp';
+    card.dataset.remaining = isHotp ? '' : (c.secondsRemaining ?? '');
+    card.dataset.period = isHotp ? '' : (c.period ?? '');
     const pct = isHotp ? 100 : Math.min(100, Math.max(0, ((c.secondsRemaining || 0) / c.period) * 100));
     const barClass = pct <= 20 ? ' crit' : pct <= 45 ? ' warn' : '';
 
@@ -126,6 +158,35 @@ async function loadCodes() {
 
     grid.appendChild(card);
   }
+}
+
+// Local countdown: reuse the last server snapshot between polls so the
+// progress bar keeps moving without hammering the API every second.
+function tickCountdowns() {
+  if ($('#tab-codes').hidden || !codesSnapshot) return;
+  const elapsed = (Date.now() - codesSnapshot.at) / 1000;
+  let crossed = false;
+  let live = false; // any TOTP/Steam card with a countdown?
+  for (const card of $$('#codes-grid .code-card')) {
+    if (!card.dataset.remaining) continue; // HOTP cards have no countdown
+    live = true;
+    const initial = Number(card.dataset.remaining);
+    const period = Number(card.dataset.period);
+    if (!Number.isFinite(initial) || !Number.isFinite(period) || period <= 0) continue;
+    const remaining = Math.max(0, Math.round(initial - elapsed));
+    card.querySelector('.countdown').textContent = `${remaining}s`;
+    const pct = Math.min(100, Math.max(0, (remaining / period) * 100));
+    const bar = card.querySelector('.progress');
+    if (bar) {
+      bar.firstElementChild.style.width = pct + '%';
+      bar.classList.toggle('crit', pct <= 20);
+      bar.classList.toggle('warn', pct > 20 && pct <= 45);
+    }
+    if (remaining <= 0) crossed = true;
+  }
+  // Fetch when a window rolls over, or — if there are no live codes to tick —
+  // every 30s so entries added elsewhere still show up.
+  if (crossed || (!live && elapsed >= 30)) loadCodes();
 }
 
 function formatCode(code) {
